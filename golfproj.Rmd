@@ -1,16 +1,17 @@
 ---
-title: "Golf Project"
-author: "Thomas Schechter and Ian Bogley"
-date: "12/9/2021"
+title: "golf_proj"
+author: "Thomas Schechter"
+date: "12/10/2021"
 output: pdf_document
 ---
 
-```{r intro}
+```{r}
 library(pacman)
-p_load(tidyverse,tidymodels,here)
+p_load(tidyverse,data.table,tidymodels)
+pga_data17 <- fread("PGATOUR_data2.csv")
 ```
 
-```{r data}
-data <- read.csv(here("PGATOUR_data2.csv"))
+```{r}
+
 ```
 
