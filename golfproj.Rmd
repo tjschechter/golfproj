@@ -6,27 +6,36 @@ output: pdf_document
 ---
 
 ```{r}
+#Package unloading
 library(pacman)
 p_load(tidyverse,data.table,tidymodels)
+
+#Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
 Read data in and installed packages.
 ```{r}
+#Subset data
 pga_data <- pga_data17[1:195,]
 
 ```
 Subset the data to remove null and na values, turned subset data into data.table
 ```{r}
+#Begin exploring the relationships in the data
+
+#Correlation b/w rounds played and top tens
 model1 <- lm(ROUNDS_PLAYED~NUMBER_OF_TOP_Tens, pga_data)
 
 tidy(model1)
 
+#Plot the previous relationship
 ggplot(pga_data, aes(ROUNDS_PLAYED, NUMBER_OF_TOP_Tens)) + 
   geom_point()
 ```
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
 
 ```{r}
+#Plotting strokes gained putting vs. top ten finishes
 putt_plot <- ggplot(pga_data, aes(SG_PUTTING_PER_ROUND, NUMBER_OF_TOP_Tens)) +
   geom_point()
 
@@ -35,8 +44,14 @@ putt_plot
 Strokes gained putting seems to have more of an effect on success.
 
 ```{r}
+#Plotting average drive distance vs. top ten finishes
 drive_plot <- ggplot(pga_data, aes(AVG_Driving_DISTANCE,NUMBER_OF_TOP_Tens)) + geom_point()
 
 drive_plot
 ```
 Some relationship appears present, though with more outliers on both ends of the spectrum.
+
+```{r}
+
+```
+
