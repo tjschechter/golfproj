@@ -14,10 +14,14 @@ Read data in and installed packages.
 ```{r}
 pga_data <- pga_data17[1:195,]
 
-pga_data <- as.data.table("pga_data")
 ```
 Subset the data to remove null and na values, turned subset data into data.table
 ```{r}
+model1 <- lm(ROUNDS_PLAYED~NUMBER_OF_TOP_Tens, pga_data)
 
+tidy(model1)
+
+ggplot(pga_data, aes(ROUNDS_PLAYED, NUMBER_OF_TOP_Tens)) + 
+  geom_point()
 ```
-
+Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
