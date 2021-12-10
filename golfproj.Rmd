@@ -7,10 +7,10 @@ output: pdf_document
 
 ```{r intro}
 library(pacman)
-p_load(tidyverse,tidymodels)
+p_load(tidyverse,tidymodels,here)
 ```
 
-```{r}
-
+```{r data}
+data <- read.csv(here("PGATOUR_data2.csv"))
 ```
 
