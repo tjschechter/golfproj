@@ -34,4 +34,9 @@ putt_plot
 ```
 Strokes gained putting seems to have more of an effect on success.
 
+```{r}
+drive_plot <- ggplot(pga_data, aes(AVG_Driving_DISTANCE,NUMBER_OF_TOP_Tens)) + geom_point()
 
+drive_plot
+```
+Some relationship appears present, though with more outliers on both ends of the spectrum.
