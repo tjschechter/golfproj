@@ -25,3 +25,13 @@ ggplot(pga_data, aes(ROUNDS_PLAYED, NUMBER_OF_TOP_Tens)) +
   geom_point()
 ```
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
+
+```{r}
+putt_plot <- ggplot(pga_data, aes(SG_PUTTING_PER_ROUND, NUMBER_OF_TOP_Tens)) +
+  geom_point()
+
+putt_plot
+```
+Strokes gained putting seems to have more of an effect on success.
+
+
