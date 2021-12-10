@@ -1,6 +1,6 @@
 ---
 title: "golf_proj"
-author: "Thomas Schechter"
+author: "Thomas Schechter and Ian Bogley"
 date: "12/10/2021"
 output: pdf_document
 ---
