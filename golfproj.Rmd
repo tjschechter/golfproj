@@ -10,7 +10,13 @@ library(pacman)
 p_load(tidyverse,data.table,tidymodels)
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
+Read data in and installed packages.
+```{r}
+pga_data <- pga_data17[1:195,]
 
+pga_data <- as.data.table("pga_data")
+```
+Subset the data to remove null and na values, turned subset data into data.table
 ```{r}
 
 ```
