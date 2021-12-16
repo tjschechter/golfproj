@@ -4,54 +4,89 @@ author: "Thomas Schechter and Ian Bogley"
 date: "12/10/2021"
 output: pdf_document
 ---
-
+Read data in and installed packages.
 ```{r}
 #Package unloading
 library(pacman)
-p_load(tidyverse,data.table,tidymodels)
+p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,janitor,sandwich)
 
 #Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
-Read data in and installed packages.
+Subset the data to remove null and na values, turned subset data into data.table
 ```{r}
 #Subset data
-pga_data <- pga_data17[1:195,]
-
+pga_data <- pga_data17[1:195,] %>% clean_names() %>%
+  mutate(top_ten_finisher = (number_of_top_tens>0))
 ```
-Subset the data to remove null and na values, turned subset data into data.table
+
+Now, let's graph potential factors in top ten finishes and look for correlations.
+
+
 ```{r}
 #Begin exploring the relationships in the data
 
 #Correlation b/w rounds played and top tens
-model1 <- lm(ROUNDS_PLAYED~NUMBER_OF_TOP_Tens, pga_data)
+model1 <- lm(rounds_played~number_of_top_tens, pga_data)
 
 tidy(model1)
 
-#Plot the previous relationship
-ggplot(pga_data, aes(ROUNDS_PLAYED, NUMBER_OF_TOP_Tens)) + 
-  geom_point()
+#Plot the rounds played relationship
+round_plot <-  ggplot(pga_data, aes(rounds_played, number_of_top_tens)) + 
+  geom_point() +  geom_smooth(method = "lm") +
+  labs(x = "Rounds Played",
+       y = "Number of Top Tens")
+
+#Plotting strokes gained putting vs. top ten finishes
+putt_plot <- ggplot(pga_data, aes(sg_putting_per_round, number_of_top_tens)) +
+  geom_point() +  geom_smooth(method = "lm") +
+  labs(x = "Shots Gained Putting per Round",
+       y = "Number of Top Tens")
+
+#Plotting average drive distance vs. top ten finishes
+drive_plot <- ggplot(pga_data, aes(avg_driving_distance,number_of_top_tens)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Avg Driving Distance",
+       y = "Number of Top Tens")
+
+#Plotting Fairway hit percentage vs top ten finishes
+fairway_plot <- ggplot(pga_data, aes(x=fairway_hit_percent,y = number_of_top_tens)) +
+  geom_point() + geom_smooth(method = "lm")+
+  labs(x = "Fairway Hit Percentage",
+       y = "Number of Top Tens")
+
+#Arrange previous plots into a single graphic
+ggarrange(round_plot,putt_plot,drive_plot,fairway_plot)
+
 ```
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
 
-```{r}
-#Plotting strokes gained putting vs. top ten finishes
-putt_plot <- ggplot(pga_data, aes(SG_PUTTING_PER_ROUND, NUMBER_OF_TOP_Tens)) +
-  geom_point()
-
-putt_plot
-```
 Strokes gained putting seems to have more of an effect on success.
 
-```{r}
-#Plotting average drive distance vs. top ten finishes
-drive_plot <- ggplot(pga_data, aes(AVG_Driving_DISTANCE,NUMBER_OF_TOP_Tens)) + geom_point()
+Some relationship appears present in average driving distance, though with more outliers on both ends of the spectrum.
 
-drive_plot
+There seems to be even less of a correlation in terms of fairway hit percentage than the previous ones. Even if there is, it is much smaller of an impact than the other factors examined.
+
+
+Let's examine these relationships as linear regressions, identifying the impact of each and the robustness of the coefficients.
+
+```{r}
+for (i in 1:4) {
+  #vector of variable names
+  variables <- c("rounds_played","sg_putting_per_round",
+                 "avg_driving_distance","fairway_hit_percent")
+  
+  #models for each variable
+  eval(parse(text = paste("model_",i+1,
+                          " <- lm(number_of_top_tens ~ ",variables[i],
+                          ",pga_data)",sep = "")))
+  
+  #robust se for each variable
+  eval(parse(text = paste("robust_se_",i+1," <- list(sqrt(diag(vcovHC(model_",i+1,"))))",sep ="")))
+}
+
 ```
-Some relationship appears present, though with more outliers on both ends of the spectrum.
-
-```{r}
-
+```{r results='asis'}
+stargazer(model_2,model_3,model_4,model_5)
 ```
 
