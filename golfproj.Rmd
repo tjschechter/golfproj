@@ -8,7 +8,7 @@ output: pdf_document
 knitr::opts_chunk$set(warning=FALSE,message=FALSE)
 ```
 
-Golf is a sport with a diverse and detailed set of statistics. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
+Golf is a sport with diverse and detailed statistics. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
 
 In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes.)
 
