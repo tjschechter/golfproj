@@ -4,8 +4,16 @@ author: "Thomas Schechter and Ian Bogley"
 date: "12/10/2021"
 output: pdf_document
 ---
-Read data in and installed packages.
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,message=FALSE)
+```
+
+Golf is a sport with a diverse and detailed set of statistics. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
+
+In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes.)
+
+To start, let's begin by reading in the data and install necessary packages.
+```{r intro}
 #Package unloading
 library(pacman)
 p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,janitor,sandwich)
@@ -13,8 +21,10 @@ p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,janitor,sandwich)
 #Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
-Subset the data to remove null and na values, turned subset data into data.table
-```{r}
+
+Now, we will clean the data, subsetting to remove null and NA values.
+
+```{r cleaning}
 #Subset data
 pga_data <- pga_data17[1:195,] %>% clean_names() %>%
   mutate(top_ten_finisher = (number_of_top_tens>0))
@@ -23,10 +33,10 @@ pga_data <- pga_data17[1:195,] %>% clean_names() %>%
 Now, let's graph potential factors in top ten finishes and look for correlations.
 
 
-```{r}
+```{r EDA}
 #Begin exploring the relationships in the data
 
-#Correlation b/w rounds played and top tens
+#Correlation b/w rounds played and top tens (Is this looking for issues in representation? Players with top tens more represented, so perhaps those without top tens are underrepresented?)
 model1 <- lm(rounds_played~number_of_top_tens, pga_data)
 
 tidy(model1)
@@ -70,7 +80,7 @@ There seems to be even less of a correlation in terms of fairway hit percentage 
 
 Let's examine these relationships as linear regressions, identifying the impact of each and the robustness of the coefficients.
 
-```{r}
+```{r models}
 for (i in 1:4) {
   #vector of variable names
   variables <- c("rounds_played","sg_putting_per_round",
@@ -86,7 +96,7 @@ for (i in 1:4) {
 }
 
 ```
-```{r results='asis'}
+```{r table_1,echo=FALSE,results='asis'}
 stargazer(model_2,model_3,model_4,model_5)
 ```
 
