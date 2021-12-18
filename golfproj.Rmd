@@ -120,11 +120,15 @@ stargazer(model_2,model_3,model_4,model_5)
 We can also go further, collecting the variables with the highest correlation to our dependant variable.
 
 ```{r cor}
+#Correlation coefficients of each var with top ten finisher
 cor_coef <- lapply(pga_data[,-c(1,4,5,70)], 
-                   FUN = function(x) {cor(x=as.numeric(x),
-                                          y = pga_data$top_ten_finisher)})
+                   FUN = function(x) {
+                     cor(x=as.numeric(x),
+                         y = pga_data$top_ten_finisher)})
 
-top_var <- cor_coef[order(abs(unlist(cor_coef)),decreasing=T)[1:20]] %>%
+#get a list of the top 20 variables by absolute cor coef
+top_var <- cor_coef[order(abs(unlist(cor_coef)),
+                          decreasing=T)[1:20]] %>%
   as.data.frame() %>% gather() %>% 
   rename(var = "key", cor = "value")
 ```
@@ -135,10 +139,16 @@ xtable(top_var)
 Now we have a set of variables which are highly correlated with our explanatory variable. Now let's check for colinearity between these variables.
 
 ```{r col}
+#Get the top variables
 top_var_data <- pga_data %>% select(top_var$var)
+
+#Create a correlation matrix of top variables
 top_var_cormat <- round(cor(top_var_data),2) 
+
+#Delete duplicate values
 top_var_cormat[lower.tri(top_var_cormat)] <- NA
 
+#Plot Collinearity values as a heatmap
 top_var_cormat %>% melt() %>%
   ggplot(aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + theme(axis.text.x= element_text(angle = -75),
@@ -149,6 +159,8 @@ top_var_cormat %>% melt() %>%
 We can see that there are quite a few variable pairings that may present a danger. Let's take the mean absolute correlation coefficient, then take a look at all the pairs of explanatory variables which have an absolute correlation coefficient above it. We will use this as a cutoff, meaning that these variable pairings are ones we want to avoid in our models.
 
 ```{r var_avoid}
+#Create a df of variable pairs to avoid, 
+#using mean correlation coefficient as the cutoff
 top_var_avoid <- top_var_cormat %>% melt() %>%
   filter((abs(value)>abs(mean(value,na.rm=T)))&!value==1) %>%
   arrange(-abs(value))
