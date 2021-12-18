@@ -16,7 +16,8 @@ To start, let's begin by reading in the data and install necessary packages.
 ```{r intro}
 #Package unloading
 library(pacman)
-p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,janitor,sandwich)
+p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,
+       janitor,sandwich,xtable)
 
 #Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
@@ -28,6 +29,12 @@ Now, we will clean the data, subsetting to remove null and NA values.
 #Subset data
 pga_data <- pga_data17[1:195,] %>% clean_names() %>%
   mutate(top_ten_finisher = (number_of_top_tens>0))
+
+#check for further na values
+lapply(pga_data,FUN = function(x) {sum(is.na(x))})
+
+#There is one missing value in the "points behind lead" column, we will use the mean value to impute
+pga_data$points_behind_lead[33] <- mean(pga_data$points_behind_lead,na.rm = T)
 ```
 
 Now, let's graph potential factors in top ten finishes and look for correlations.
@@ -98,5 +105,32 @@ for (i in 1:4) {
 ```
 ```{r table_1,echo=FALSE,results='asis'}
 stargazer(model_2,model_3,model_4,model_5)
+```
+
+We can also go further, collecting the variables with the highest correlation to our dependant variable.
+
+```{r cor}
+cor_coef <- lapply(pga_data[,-c(1,4,5,70)], 
+                   FUN = function(x) {cor(x=as.numeric(x),
+                                          y = pga_data$top_ten_finisher)})
+
+top_var <- cor_coef[order(abs(unlist(cor_coef)),decreasing=T)[1:20]] %>%
+  as.data.frame() %>% gather() %>% 
+  rename(var = "key", cor = "value")
+```
+```{r table_2,echo=F,results='asis'}
+xtable(top_var)
+```
+
+Now we have a set of variables which are highly correlated with our explanatory variable. Now let's check for collinearity between these variables.
+
+```{r col}
+top_var_data <- pga_data %>% select(top_var$var)
+top_var_cormat <- round(cor(top_var_data),2) 
+top_var_cormat[lower.tri(top_var_cormat)] <- NA
+
+top_var_cormat %>% melt() %>%
+  ggplot(aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile()
 ```
 
