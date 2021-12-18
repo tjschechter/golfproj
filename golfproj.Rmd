@@ -10,7 +10,7 @@ knitr::opts_chunk$set(warning=FALSE,message=FALSE)
 
 Golf is a sport with diverse and detailed statistics, making it ideal grounds for prediction and analysis. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
 
-In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes.)
+In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes. Number of players who never managed to break into the top 10 are 34, while the number who did at some point is 161. This means that with a k-fold cross-validation approach where k=5, the probability of not having a False observation in one of the 5 folds is:[I forgot my probability stuff, but I think we might have a problem here.])
 
 To start, let's begin by reading in the data and install necessary packages.
 ```{r intro}
@@ -159,4 +159,11 @@ For presentation purposes, we will only show the first 10 pairs.
 top_var_avoid %>% head(10) %>% xtable()
 ```
 
-When creating our models, we will need to ensure that no two variables in the same row are included in the same model.
+When creating our models, we will need to ensure that no two variables in the same row are included in the same model. To do so, let's create a list of variable pairings that cannot be put together.
+
+```{r}
+#top_var_avoid[,-3]
+```
+
+For our explanatory variable, we have a classification problem. We have decided to make it a binary variable detailing whether a player is ever able to make it into the top 10 of an event.
+

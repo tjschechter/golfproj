@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021/W32TeX) (preloaded format=pdflatex 2021.6.10)  18 DEC 2021 02:17
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021/W32TeX) (preloaded format=pdflatex 2021.6.10)  18 DEC 2021 13:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -488,41 +488,41 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 114
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-30.
+34.
 (c:/Users/IB/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 150.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 154.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 161.
+(Font)              <10> on input line 165.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 161.
+(Font)              <7> on input line 165.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 161.
+(Font)              <5> on input line 165.
 [1
 
 {c:/Users/IB/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.m
-ap}]
-<golfproj_files/figure-latex/plots-1.pdf, id=15, 469.755pt x 325.215pt>
+ap}] [2]
+<golfproj_files/figure-latex/plots-1.pdf, id=24, 469.755pt x 325.215pt>
 File: golfproj_files/figure-latex/plots-1.pdf Graphic file (type pdf)
 <use golfproj_files/figure-latex/plots-1.pdf>
 Package pdftex.def Info: golfproj_files/figure-latex/plots-1.pdf  used on input
- line 252.
+ line 256.
 (pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 252--255
+Underfull \hbox (badness 10000) in paragraph at lines 256--259
 [][]
  []
 
-[2] [3 <./golfproj_files/figure-latex/plots-1.pdf>] [4]
+[3 <./golfproj_files/figure-latex/plots-1.pdf>] [4]
 <golfproj_files/figure-latex/col-1.pdf, id=43, 469.755pt x 325.215pt>
 File: golfproj_files/figure-latex/col-1.pdf Graphic file (type pdf)
 <use golfproj_files/figure-latex/col-1.pdf>
 Package pdftex.def Info: golfproj_files/figure-latex/col-1.pdf  used on input l
-ine 396.
+ine 400.
 (pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
-[5 <./golfproj_files/figure-latex/col-1.pdf>] [6] (./golfproj.aux)
+[5] [6 <./golfproj_files/figure-latex/col-1.pdf>] [7] (./golfproj.aux)
 
 LaTeX Warning: There were multiply-defined labels.
 
@@ -530,9 +530,9 @@ Package rerunfilecheck Info: File `golfproj.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 10524 strings out of 480496
- 154930 string characters out of 5898157
- 475262 words of memory out of 5000000
+ 10525 strings out of 480496
+ 154936 string characters out of 5898157
+ 476262 words of memory out of 5000000
  28027 multiletter control sequences out of 15000+600000
  441944 words of font info for 65 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
@@ -553,10 +553,10 @@ m/lmsy7.pfb><c:/Users/IB/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/
 lm/lmtk10.pfb><c:/Users/IB/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/publi
 c/lm/lmtt10.pfb><c:/Users/IB/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/pub
 lic/lm/lmtti10.pfb>
-Output written on golfproj.pdf (6 pages, 271974 bytes).
+Output written on golfproj.pdf (7 pages, 273820 bytes).
 PDF statistics:
- 112 PDF objects out of 1000 (max. 8388607)
- 76 compressed objects within 1 object stream
- 9 named destinations out of 1000 (max. 500000)
+ 118 PDF objects out of 1000 (max. 8388607)
+ 81 compressed objects within 1 object stream
+ 10 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 
