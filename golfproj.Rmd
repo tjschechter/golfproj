@@ -28,15 +28,22 @@ Now, we will clean the data, subsetting to remove null and NA values.
 ```{r cleaning,results='asis'}
 #Subset data
 pga_data <- pga_data17[1:195,] %>% clean_names() %>%
-  mutate(top_ten_finisher = (number_of_top_tens>0))
+  mutate(top_ten_finisher = as.factor(number_of_top_tens>0))
 
 #check for further na values
 lapply(pga_data,FUN = function(x) {sum(is.na(x))}) %>%
-  as.data.frame() %>% melt() %>% rename("Var" = "variable","NAs"="value") %>%
+  as.data.frame() %>% melt() %>% 
+  rename("Var" = "variable","NAs"="value") %>%
   filter(NAs>0) %>% xtable()
 
 #There is one missing value in the "points behind lead" column, we will use the mean value to impute
 pga_data$points_behind_lead[33] <- mean(pga_data$points_behind_lead,na.rm = T)
+
+#Several variables seem to be character variables as well
+pga_data$fairways_hit <- gsub(",","",pga_data$fairways_hit) %>% 
+  as.numeric()
+pga_data$total_drives <- gsub(",","",pga_data$total_drives) %>%
+  as.numeric()
 ```
 
 Now, let's graph potential factors in top ten finishes and look for correlations.
@@ -124,7 +131,7 @@ We can also go further, collecting the variables with the highest correlation to
 cor_coef <- lapply(pga_data[,-c(1,4,5,70)], 
                    FUN = function(x) {
                      cor(x=as.numeric(x),
-                         y = pga_data$top_ten_finisher)})
+                         y = as.numeric(pga_data$top_ten_finisher))})
 
 #get a list of the top 20 variables by absolute cor coef
 top_var <- cor_coef[order(abs(unlist(cor_coef)),
@@ -174,8 +181,33 @@ top_var_avoid %>% head(10) %>% xtable()
 When creating our models, we will need to ensure that no two variables in the same row are included in the same model. To do so, let's create a list of variable pairings that cannot be put together.
 
 ```{r}
-#top_var_avoid[,-3]
+top_var_avoid_pairs <- top_var_avoid[,-3]
 ```
 
 For our explanatory variable, we have a classification problem. We have decided to make it a binary variable detailing whether a player is ever able to make it into the top 10 of an event.
+
+# Modeling
+To begin our modeling process, let's define our validation method: k-fold cross-validation. Let's also seperate our data into folds for this process. Let's also preprocess a recipe for our data where we normalize our numeric predictors to eliminate issues with units
+
+```{r preprocessing}
+pga_folded <- pga_data %>% vfold_cv(v=5)
+
+pga_recipe <- pga_data %>%
+  recipe(top_ten_finisher ~ .) %>%
+  update_role(player, new_role = "id variable") %>%
+  step_normalize(all_predictors()&all_numeric())
+
+pga_clean <- pga_recipe %>% prep() %>% juice()
+```
+```{r}
+
+```
+
+
+To start, let's set up several different models: Maximum Likelihood Estimation (Logistic Regression),
+
+```{r tidymodels_recipe}
+log_fit <- logistic_reg() %>%
+  fit(top_ten_finisher ~ points_behind_lead,data = pga_clean)
+```
 
