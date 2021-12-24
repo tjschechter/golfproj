@@ -214,15 +214,14 @@ pga_clean <- pga_recipe %>% prep() %>% juice()
 
 To start, let's set up several different models: Maximum Likelihood Estimation (Logistic Regression),
 
-<<<<<<< HEAD
 #Plotting strokes gained off the tee vs. drive average distance
 sg_drive <- ggplot(pga_data, aes(SG:OTT, AVG_Driving_DISTANCE)) + geom_point()
 
 sg_drive
-=======
+
 ```{r tidymodels_recipe}
 log_fit <- logistic_reg() %>%
   fit(top_ten_finisher ~ points_behind_lead,data = pga_clean)
->>>>>>> 282093ef6a6f90d25ca1c8c3a5b27e7abd6c9a36
+
 ```
 
