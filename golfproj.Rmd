@@ -8,7 +8,7 @@ output: pdf_document
 ```{r}
 #Package unloading
 library(pacman)
-p_load(tidyverse,data.table,tidymodels)
+p_load(tidyverse,data.table,tidymodels,DBI,knitr,RSQLite)
 
 #Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
@@ -51,7 +51,17 @@ drive_plot
 ```
 Some relationship appears present, though with more outliers on both ends of the spectrum.
 
+
+```{sql, connection=db}
+ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
+```
+
+
 ```{r}
 
+#Plotting strokes gained off the tee vs. drive average distance
+sg_drive <- ggplot(pga_data, aes(SG:OTT, AVG_Driving_DISTANCE)) + geom_point()
+
+sg_drive
 ```
 
