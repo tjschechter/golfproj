@@ -1,55 +1,186 @@
 ---
-title: "Placeholder Golf Project"
+title: "Golf Machine Learning Project: Predicting Successful Players in the PGA Tour with TidyModels"
 author: "Thomas Schechter and Ian Bogley"
 date: "12/10/2021"
 output: pdf_document
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,message=FALSE)
+```
 
-```{r}
+Golf is a sport with diverse and detailed statistics, making it ideal grounds for prediction and analysis. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
+
+In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes. Number of players who never managed to break into the top 10 are 34, while the number who did at some point is 161. This means that with a k-fold cross-validation approach where k=5, the probability of not having a False observation in one of the 5 folds is:[I forgot my probability stuff, but I think we might have a problem here.])
+
+To start, let's begin by reading in the data and install necessary packages.
+```{r intro}
 #Package unloading
 library(pacman)
-p_load(tidyverse,data.table,tidymodels,DBI,knitr,RSQLite)
+
+p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,
+       janitor,sandwich,xtable)
+
 
 #Read in data
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
-Read data in and installed packages.
-```{r}
-#Subset data
-pga_data <- pga_data17[1:195,]
 
+Now, we will clean the data, subsetting to remove null and NA values.
+
+```{r cleaning,results='asis'}
+#Subset data
+pga_data <- pga_data17[1:195,] %>% clean_names() %>%
+  mutate(top_ten_finisher = as.factor(number_of_top_tens>0))
+
+#check for further na values
+lapply(pga_data,FUN = function(x) {sum(is.na(x))}) %>%
+  as.data.frame() %>% melt() %>% 
+  rename("Var" = "variable","NAs"="value") %>%
+  filter(NAs>0) %>% xtable()
+
+#There is one missing value in the "points behind lead" column, we will use the mean value to impute
+pga_data$points_behind_lead[33] <- mean(pga_data$points_behind_lead,na.rm = T)
+
+#Several variables seem to be character variables as well
+pga_data$fairways_hit <- gsub(",","",pga_data$fairways_hit) %>% 
+  as.numeric()
+pga_data$total_drives <- gsub(",","",pga_data$total_drives) %>%
+  as.numeric()
 ```
-Subset the data to remove null and na values, turned subset data into data.table
-```{r}
+
+Now, let's graph potential factors in top ten finishes and look for correlations.
+
+
+```{r EDA}
 #Begin exploring the relationships in the data
 
-#Correlation b/w rounds played and top tens
-model1 <- lm(ROUNDS_PLAYED~NUMBER_OF_TOP_Tens, pga_data)
+#Correlation b/w rounds played and top tens (Is this looking for issues in representation? Players with top tens more represented, so perhaps those without top tens are underrepresented?)
+model1 <- lm(rounds_played~number_of_top_tens, pga_data)
 
-tidy(model1)
+```
 
-#Plot the previous relationship
-ggplot(pga_data, aes(ROUNDS_PLAYED, NUMBER_OF_TOP_Tens)) + 
-  geom_point()
+```{r table1,echo=FALSE,results='asis'}
+stargazer(model1)
+```
+
+
+```{r plots}
+#Plot the rounds played relationship
+round_plot <-  ggplot(pga_data, aes(rounds_played, number_of_top_tens)) + 
+  geom_point() +  geom_smooth(method = "lm") +
+  labs(x = "Rounds Played",
+       y = "Number of Top Tens")
+
+#Plotting strokes gained putting vs. top ten finishes
+putt_plot <- ggplot(pga_data, aes(sg_putting_per_round, number_of_top_tens)) +
+  geom_point() +  geom_smooth(method = "lm") +
+  labs(x = "Shots Gained Putting per Round",
+       y = "Number of Top Tens")
+
+#Plotting average drive distance vs. top ten finishes
+drive_plot <- ggplot(pga_data, aes(avg_driving_distance,number_of_top_tens)) +
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Avg Driving Distance",
+       y = "Number of Top Tens")
+
+#Plotting Fairway hit percentage vs top ten finishes
+fairway_plot <- ggplot(pga_data, aes(x=fairway_hit_percent,y = number_of_top_tens)) +
+  geom_point() + geom_smooth(method = "lm")+
+  labs(x = "Fairway Hit Percentage",
+       y = "Number of Top Tens")
+
+#Arrange previous plots into a single graphic
+ggarrange(round_plot,putt_plot,drive_plot,fairway_plot)
+
 ```
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
 
-```{r}
-#Plotting strokes gained putting vs. top ten finishes
-putt_plot <- ggplot(pga_data, aes(SG_PUTTING_PER_ROUND, NUMBER_OF_TOP_Tens)) +
-  geom_point()
-
-putt_plot
-```
 Strokes gained putting seems to have more of an effect on success.
 
-```{r}
-#Plotting average drive distance vs. top ten finishes
-drive_plot <- ggplot(pga_data, aes(AVG_Driving_DISTANCE,NUMBER_OF_TOP_Tens)) + geom_point()
+Some relationship appears present in average driving distance, though with more outliers on both ends of the spectrum.
 
-drive_plot
+There seems to be even less of a correlation in terms of fairway hit percentage than the previous ones. Even if there is, it is much smaller of an impact than the other factors examined.
+
+
+Let's examine these relationships as linear regressions, identifying the impact of each and the robustness of the coefficients.
+
+```{r models}
+for (i in 1:4) {
+  #vector of variable names
+  variables <- c("rounds_played","sg_putting_per_round",
+                 "avg_driving_distance","fairway_hit_percent")
+  
+  #models for each variable
+  eval(parse(text = paste("model_",i+1,
+                          " <- lm(number_of_top_tens ~ ",variables[i],
+                          ",pga_data)",sep = "")))
+  
+  #robust se for each variable
+  eval(parse(text = paste("robust_se_",i+1,
+                          " <- list(sqrt(diag(vcovHC(model_",i+1,"))))",
+                          sep ="")))
+}
+
 ```
-Some relationship appears present, though with more outliers on both ends of the spectrum.
+```{r table_2,echo=FALSE,results='asis'}
+stargazer(model_2,model_3,model_4,model_5)
+```
+
+We can also go further, collecting the variables with the highest correlation to our dependant variable.
+
+```{r cor}
+#Correlation coefficients of each var with top ten finisher
+cor_coef <- lapply(pga_data[,-c(1,4,5,70)], 
+                   FUN = function(x) {
+                     cor(x=as.numeric(x),
+                         y = as.numeric(pga_data$top_ten_finisher))})
+
+#get a list of the top 20 variables by absolute cor coef
+top_var <- cor_coef[order(abs(unlist(cor_coef)),
+                          decreasing=T)[1:20]] %>%
+  as.data.frame() %>% gather() %>% 
+  rename(var = "key", cor = "value")
+```
+```{r table_3,echo=F,results='asis'}
+xtable(top_var)
+```
+
+Now we have a set of variables which are highly correlated with our explanatory variable. Now let's check for colinearity between these variables.
+
+```{r col}
+#Get the top variables
+top_var_data <- pga_data %>% select(top_var$var)
+
+#Create a correlation matrix of top variables
+top_var_cormat <- round(cor(top_var_data),2) 
+
+#Delete duplicate values
+top_var_cormat[lower.tri(top_var_cormat)] <- NA
+
+#Plot Collinearity values as a heatmap
+top_var_cormat %>% melt() %>%
+  ggplot(aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + theme(axis.text.x= element_text(angle = -75),
+                      plot.title=element_text(hjust = .5)) +
+  labs(title = "Collinearity Matrix") + xlab("") + ylab("") 
+```
+
+We can see that there are quite a few variable pairings that may present a danger. Let's take the mean absolute correlation coefficient, then take a look at all the pairs of explanatory variables which have an absolute correlation coefficient above it. We will use this as a cutoff, meaning that these variable pairings are ones we want to avoid in our models.
+
+```{r var_avoid}
+#Create a df of variable pairs to avoid, 
+#using mean correlation coefficient as the cutoff
+top_var_avoid <- top_var_cormat %>% melt() %>%
+  filter((abs(value)>abs(mean(value,na.rm=T)))&!value==1) %>%
+  arrange(-abs(value))
+```
+For presentation purposes, we will only show the first 10 pairs.
+
+```{r table_4,echo=FALSE,results='asis'}
+top_var_avoid %>% head(10) %>% xtable()
+```
+
+When creating our models, we will need to ensure that no two variables in the same row are included in the same model. To do so, let's create a list of variable pairings that cannot be put together.
 
 
 ```{sql, connection=db}
@@ -58,10 +189,40 @@ ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
 
 
 ```{r}
+top_var_avoid_pairs <- top_var_avoid[,-3]
+```
 
+For our explanatory variable, we have a classification problem. We have decided to make it a binary variable detailing whether a player is ever able to make it into the top 10 of an event.
+
+# Modeling
+To begin our modeling process, let's define our validation method: k-fold cross-validation. Let's also seperate our data into folds for this process. Let's also preprocess a recipe for our data where we normalize our numeric predictors to eliminate issues with units
+
+```{r preprocessing}
+pga_folded <- pga_data %>% vfold_cv(v=5)
+
+pga_recipe <- pga_data %>%
+  recipe(top_ten_finisher ~ .) %>%
+  update_role(player, new_role = "id variable") %>%
+  step_normalize(all_predictors()&all_numeric())
+
+pga_clean <- pga_recipe %>% prep() %>% juice()
+```
+```{r}
+
+```
+
+
+To start, let's set up several different models: Maximum Likelihood Estimation (Logistic Regression),
+
+<<<<<<< HEAD
 #Plotting strokes gained off the tee vs. drive average distance
 sg_drive <- ggplot(pga_data, aes(SG:OTT, AVG_Driving_DISTANCE)) + geom_point()
 
 sg_drive
+=======
+```{r tidymodels_recipe}
+log_fit <- logistic_reg() %>%
+  fit(top_ten_finisher ~ points_behind_lead,data = pga_clean)
+>>>>>>> 282093ef6a6f90d25ca1c8c3a5b27e7abd6c9a36
 ```
 
