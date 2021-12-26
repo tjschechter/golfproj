@@ -89,8 +89,14 @@ fairway_plot <- ggplot(pga_data, aes(x=fairway_hit_percent,y = number_of_top_ten
   labs(x = "Fairway Hit Percentage",
        y = "Number of Top Tens")
 
+#Plotting Shots gained off the tee vs top ten finishes
+tee_plot <- ggplot(pga_data, aes(x=sg_ott,y = number_of_top_tens)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  labs(x = "Shots Gained: Off the Tee",
+       y = "Number of Top Tens")
+
 #Arrange previous plots into a single graphic
-ggarrange(round_plot,putt_plot,drive_plot,fairway_plot)
+ggarrange(round_plot,putt_plot,drive_plot,fairway_plot,tee_plot)
 
 ```
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
@@ -105,10 +111,11 @@ There seems to be even less of a correlation in terms of fairway hit percentage 
 Let's examine these relationships as linear regressions, identifying the impact of each and the robustness of the coefficients.
 
 ```{r models}
-for (i in 1:4) {
+for (i in 1:5) {
   #vector of variable names
   variables <- c("rounds_played","sg_putting_per_round",
-                 "avg_driving_distance","fairway_hit_percent")
+                 "avg_driving_distance","fairway_hit_percent",
+                 "sg_ott")
   
   #models for each variable
   eval(parse(text = paste("model_",i+1,
@@ -123,7 +130,7 @@ for (i in 1:4) {
 
 ```
 ```{r table_2,echo=FALSE,results='asis'}
-stargazer(model_2,model_3,model_4,model_5)
+stargazer(model_2,model_3,model_4,model_5,model_6)
 ```
 
 We can also go further, collecting the variables with the highest correlation to our dependant variable.
@@ -182,14 +189,25 @@ top_var_avoid %>% head(10) %>% xtable()
 
 When creating our models, we will need to ensure that no two variables in the same row are included in the same model. To do so, let's create a list of variable pairings that cannot be put together.
 
+To choose between two variables, let's use the one with the largest correlation coefficient.
 
 ```{sql, connection=db}
 ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
 ```
 
 
-```{r}
-top_var_avoid_pairs <- top_var_avoid[,-3]
+```{r top_var_avoid}
+#Merge the df of top variables by collinearity with correlation coefficients df
+top_var1 <- top_var %>% rename(Var1 = var, Cor1 = cor)
+top_var2 <- top_var %>% rename(Var2 = var, Cor2 = cor)
+top_var_avoid_pairs <- top_var_avoid[,-3] %>% 
+  left_join(top_var1) %>%
+  left_join(top_var2) %>%
+  mutate(choose_var1 = abs(Cor1)>abs(Cor2))
+
+#From here, interesting tidbit. choose_var1 is always true, 
+#meaning that the variable in Var1 is always to be chosen
+#over the one in Var2
 ```
 
 For our explanatory variable, we have a classification problem. We have decided to make it a binary variable detailing whether a player is ever able to make it into the top 10 of an event.
@@ -198,8 +216,19 @@ For our explanatory variable, we have a classification problem. We have decided 
 To begin our modeling process, let's define our validation method: k-fold cross-validation. Let's also seperate our data into folds for this process. Let's also preprocess a recipe for our data where we normalize our numeric predictors to eliminate issues with units
 
 ```{r preprocessing}
-pga_folded <- pga_data %>% vfold_cv(v=5)
+#Split dataset into training and testing partitions, using approximately 70% for training and 30% for testing
+#set seed for repeatability
+set.seed(777)
+testing_set_rows <- sample(1:195,59)
+pga_partitioned <- pga_data %>% 
+  mutate(training_set = (!as.integer(row.names(pga_data)) %in%
+                           testing_set_rows)) %>%
+  .[,c(71,1:70)]
 
+pga_train <- pga_partitioned %>% filter(training_set) %>% .[,-1]
+pga_test <- pga_partitioned %>% filter(!training_set) %>% .[,-1]
+
+#create a recipe for TidyModels
 pga_recipe <- pga_data %>%
   recipe(top_ten_finisher ~ .) %>%
   update_role(player, new_role = "id variable") %>%
@@ -207,17 +236,8 @@ pga_recipe <- pga_data %>%
 
 pga_clean <- pga_recipe %>% prep() %>% juice()
 ```
-```{r}
-
-```
-
 
 To start, let's set up several different models: Maximum Likelihood Estimation (Logistic Regression),
-
-#Plotting strokes gained off the tee vs. drive average distance
-sg_drive <- ggplot(pga_data, aes(SG:OTT, AVG_Driving_DISTANCE)) + geom_point()
-
-sg_drive
 
 ```{r tidymodels_recipe}
 log_fit <- logistic_reg() %>%
