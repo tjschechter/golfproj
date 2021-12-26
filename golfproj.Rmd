@@ -155,7 +155,7 @@ xtable(top_var)
 Now we have a set of variables which are highly correlated with our explanatory variable. Now let's check for colinearity between these variables.
 
 ```{r col}
-#Get the top variables
+#Subset data to include only top
 top_var_data <- pga_data %>% select(top_var$var)
 
 #Create a correlation matrix of top variables
@@ -177,7 +177,7 @@ We can see that there are quite a few variable pairings that may present a dange
 ```{r var_avoid}
 #Create a df of variable pairs to avoid, 
 #using mean correlation coefficient as the cutoff
-top_var_avoid <- top_var_cormat %>% melt() %>%
+top_var_avoid <- top_var_cormat %>% melt() %>% na.omit() %>%
   filter((abs(value)>abs(mean(value,na.rm=T)))&!value==1) %>%
   arrange(-abs(value))
 ```
@@ -223,7 +223,7 @@ testing_set_rows <- sample(1:195,59)
 pga_partitioned <- pga_data %>% 
   mutate(training_set = (!as.integer(row.names(pga_data)) %in%
                            testing_set_rows)) %>%
-  .[,c(71,1:70)]
+  .[,c(71,1:70)] %>% select(c(training_set,player,top_ten_finisher,top_var$var))
 
 pga_train <- pga_partitioned %>% filter(training_set) %>% .[,-1]
 pga_test <- pga_partitioned %>% filter(!training_set) %>% .[,-1]
