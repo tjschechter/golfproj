@@ -189,7 +189,7 @@ top_var_avoid %>% head(10) %>% xtable()
 
 When creating our models, we will need to ensure that no two variables in the same row are included in the same model. To do so, let's create a list of variable pairings that cannot be put together.
 
-To choose between two variables, let's use the one with the largest correlation coefficient.
+To choose between two variables, let's use the one with the largest correlation coefficient. If that one also has a potential replacement as well, we will again use the replacement.
 
 ```{sql, connection=db}
 ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
@@ -208,6 +208,14 @@ top_var_avoid_pairs <- top_var_avoid[,-3] %>%
 #From here, interesting tidbit. choose_var1 is always true, 
 #meaning that the variable in Var1 is always to be chosen
 #over the one in Var2
+#So, let's replace each Var2
+#With the Var1 with the largest absolute Cor1 value.
+top_var_replacements <- top_var_avoid_pairs %>% group_by(Var2) %>% 
+  summarise(Var1 = unique(Var1),Cor1) %>%
+  group_by(Var2) %>% filter(Cor1==max(Cor1)) %>%
+  .[,-3] %>% rename(variable = Var2, replacement = Var1)
+top_var_replacements$rep_in_variable <- top_var_replacements$replacement %in%
+  top_var_replacements$variable
 ```
 
 For our explanatory variable, we have a classification problem. We have decided to make it a binary variable detailing whether a player is ever able to make it into the top 10 of an event.
@@ -229,7 +237,7 @@ pga_train <- pga_partitioned %>% filter(training_set) %>% .[,-1]
 pga_test <- pga_partitioned %>% filter(!training_set) %>% .[,-1]
 
 #create a recipe for TidyModels
-pga_recipe <- pga_data %>%
+pga_recipe <- pga_train %>%
   recipe(top_ten_finisher ~ .) %>%
   update_role(player, new_role = "id variable") %>%
   step_normalize(all_predictors()&all_numeric())
