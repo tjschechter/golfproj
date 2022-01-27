@@ -374,8 +374,7 @@ tune_res %>%
   pivot_longer(min_n:mtry,
     values_to = "value",
     names_to = "parameter"
-  ) %>%
-  ggplot(aes(value, mean, color = parameter)) +
+  ) %>% ggplot(aes(value, mean, color = parameter)) +
   geom_point(show.legend = FALSE) +
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "AUC")
@@ -383,6 +382,7 @@ tune_res %>%
 # Set ranges for hyperparameters we want to try
 
 
-
+rlang::last_error()
+rlang::last_trace()
 ```
 
