@@ -18,7 +18,7 @@ To start, let's begin by reading in the data and install necessary packages.
 library(pacman)
 
 p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,
-       janitor,sandwich,xtable,parsnip, caret, randomForest)
+       janitor,sandwich,xtable,parsnip, caret, randomForest, doParallel)
 
 
 #Read in data
@@ -345,5 +345,44 @@ tune_wf <- workflow() %>%
   add_model(tune_spec)
 
 #Train the hyperparameters 
+
+set.seed(789)
+pga_folds <- vfold_cv(pga_train)
+
+# Use parallel processing to speed things up
+
+doParallel::registerDoParallel()
+
+# Train many models, see which works best.
+
+set.seed(1011)
+tune_res <- tune_grid(
+  tune_wf,
+  resamples = pga_folds,
+  grid = 20
+)
+
+tune_res
+```
+
+```{r}
+
+tune_res %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  select(mean, min_n, mtry) %>%
+  pivot_longer(min_n:mtry,
+    values_to = "value",
+    names_to = "parameter"
+  ) %>%
+  ggplot(aes(value, mean, color = parameter)) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~parameter, scales = "free_x") +
+  labs(x = NULL, y = "AUC")
+
+# Set ranges for hyperparameters we want to try
+
+
+
 ```
 
