@@ -382,7 +382,5 @@ tune_res %>%
 # Set ranges for hyperparameters we want to try
 
 
-rlang::last_error()
-rlang::last_trace()
 ```
 
