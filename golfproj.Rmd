@@ -384,6 +384,38 @@ tune_res %>%
 
 ```
 ```{r}
+#Set ranges for hyperparameters we want to try
 
+rf_grid <- grid_regular(
+  mtry(range = c(5, 8)),
+  min_n(range = c(21, 25)),
+  levels = 5
+)
+
+rf_grid
+```
+```{r}
+#Tune again, this time in a more targeted way
+
+set.seed(456)
+regular_res <- tune_grid(
+  tune_wf,
+  resamples = pga_folds,
+  grid = rf_grid
+)
+
+regular_res
+```
+```{r}
+#Check our new results
+
+regular_res %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  mutate(min_n = factor(min_n)) %>%
+  ggplot(aes(mtry, mean, color = min_n)) +
+  geom_line(alpha = 0.5, size = 1.5) +
+  geom_point() +
+  labs(y = "AUC")
 ```
 
