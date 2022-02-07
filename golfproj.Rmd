@@ -418,4 +418,33 @@ regular_res %>%
   geom_point() +
   labs(y = "AUC")
 ```
+```{r}
+#Choose the best model to use
+
+best_auc <- select_best(regular_res, "roc_auc")
+
+final_rf <- finalize_model(
+  tune_spec,
+  best_auc
+)
+
+final_rf
+
+#Visually, this aligns with the highest rate of correct identification of true positives and true negatives.
+```
+```{r}
+#Let's explore variable inportance to the model now.
+
+library(vip)
+
+final_rf %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(top_ten_finisher ~ .,
+    data = pga_clean
+  ) %>%
+  vip(geom = "point")
+
+
+# It seem strokes gained approaching the green as well as number of par save and fairways hit are the three most important variables besides the obvious point standings.
+```
 
