@@ -328,6 +328,23 @@ tree_predictions <- tree_fit %>% predict(new_data = pga_test) %>% unlist()
 ```{r}
 ### Random Forest Model
 
+set.seed(9870)
+
+pga_split <- initial_split(pga_data, prop=0.8)
+pga_train2 <- pga_split %>% training()
+pga_test2 <- pga_split %>% testing()
+
+cv_pga <- pga_train %>% vfold_cv(v = 5)
+
+#create a NEW recipe for our random forest involving the split data 
+pga_recipe2 <- pga_train %>%
+  recipe(top_ten_finisher ~ .) %>%
+  update_role(player, new_role = "id variable") %>%
+  step_normalize(all_predictors()&all_numeric()) %>%
+  step_dummy(all_predictors()&all_nominal())
+
+pga_clean2 <- pga_recipe %>% prep() %>% juice()
+
 # The recipe has been prepped and juiced; tune the hyperparameters
 
 tune_spec <- rand_forest(
@@ -341,13 +358,13 @@ tune_spec <- rand_forest(
 #Create workflow
 
 tune_wf <- workflow() %>%
-  add_recipe(pga_recipe) %>%
+  add_recipe(pga_recipe2) %>%
   add_model(tune_spec)
 
 #Train the hyperparameters 
 
 set.seed(789)
-pga_folds <- vfold_cv(pga_train)
+pga_folds <- vfold_cv(pga_train2)
 
 # Use parallel processing to speed things up
 
@@ -387,8 +404,8 @@ tune_res %>%
 #Set ranges for hyperparameters we want to try
 
 rf_grid <- grid_regular(
-  mtry(range = c(5, 8)),
-  min_n(range = c(21, 25)),
+  mtry(range = c(2, 8)),
+  min_n(range = c(30, 40)),
   levels = 5
 )
 
@@ -445,6 +462,24 @@ final_rf %>%
   vip(geom = "point")
 
 
-# It seem strokes gained approaching the green as well as number of par save and fairways hit are the three most important variables besides the obvious point standings.
+# It seem strokes gained approaching the green as well as number of bunkers hit and number of par saves are the three most important variables besides the obvious point standings.
+```
+```{r}
+#Create a final workflow
+
+final_wf <- workflow() %>%
+  add_recipe(pga_recipe2) %>%
+  add_model(final_rf)
+
+final_res <- final_wf %>%
+  last_fit(pga_split)
+
+final_res %>%
+  collect_metrics()
+
+```
+
+```{r}
+
 ```
 
