@@ -1,8 +1,11 @@
 ---
-title: "Golf Machine Learning Project: Predicting Successful Players in the PGA Tour with TidyModels"
+title: 'Golf Machine Learning Project: Predicting Successful Players in the PGA Tour
+  with TidyModels'
 author: "Thomas Schechter and Ian Bogley"
 date: "12/10/2021"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE,message=FALSE)
@@ -191,9 +194,9 @@ When creating our models, we will need to ensure that no two variables in the sa
 
 To choose between two variables, let's use the one with the largest correlation coefficient. If that one also has a potential replacement as well, we will again use the replacement.
 
-```{sql, connection=db}
-ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
-```
+### ```{sql, connection=db}
+### ALTER TABLE "pga_data" RENAME COLUMN "SG:OTT" TO "sgott"
+###```
 
 
 ```{r top_var_avoid}
@@ -479,7 +482,5 @@ final_res %>%
 
 ```
 
-```{r}
 
-```
 
