@@ -135,7 +135,7 @@ round_plot <-  ggplot(pga_data, aes(rounds_played, as.integer(top_ten_finisher)-
     method.args = list(family = "binomial")) +
   labs(x = "Rounds Played",
        y = "Top 10 Finisher") +
-  scale_y_discrete()
+  scale_y_discrete(limits = c(0,1))
 
 #Plotting strokes gained putting vs. top ten finishes
 putt_plot <- ggplot(pga_data, aes(sg_putting_per_round, 
@@ -143,28 +143,32 @@ putt_plot <- ggplot(pga_data, aes(sg_putting_per_round,
   geom_point() +  geom_smooth(method = "glm", 
     method.args = list(family = "binomial")) +
   labs(x = "Shots Gained Putting per Round",
-       y = "Top 10 Finisher")
+       y = "Top 10 Finisher") +
+  scale_y_discrete(limits = c(0,1))
 
 #Plotting average drive distance vs. top ten finishes
 drive_plot <- ggplot(pga_data, aes(avg_driving_distance,as.integer(top_ten_finisher)-1)) +
   geom_point() + geom_smooth(method = "glm", 
     method.args = list(family = "binomial")) +
   labs(x = "Avg Driving Distance",
-       y = "Top 10 Finisher")
+       y = "Top 10 Finisher") +
+  scale_y_discrete(limits = c(0,1))
 
 #Plotting Fairway hit percentage vs top ten finishes
 fairway_plot <- ggplot(pga_data, aes(fairway_hit_percent,as.integer(top_ten_finisher)-1)) +
   geom_point() + geom_smooth(method = "glm", 
     method.args = list(family = "binomial")) +
   labs(x = "Fairway Hit Percentage",
-       y = "Top 10 Finisher")
-
+       y = "Top 10 Finisher") +
+  scale_y_discrete(limits = c(0,1))
+ 
 #Plotting Shots gained off the tee vs top ten finishes
 tee_plot <- ggplot(pga_data, aes(sg_ott,as.integer(top_ten_finisher)-1)) + 
   geom_point() + geom_smooth(method = "glm", 
     method.args = list(family = "binomial")) +
   labs(x = "Shots Gained: Off the Tee",
-       y = "Top 10 Finisher")
+       y = "Top 10 Finisher") +
+  scale_y_discrete(limits = c(0,1))
 
 #Arrange previous plots into a single graphic
 annotate_figure(ggarrange(round_plot,putt_plot,drive_plot,
