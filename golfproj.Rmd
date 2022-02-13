@@ -13,14 +13,16 @@ knitr::opts_chunk$set(warning=FALSE,message=FALSE)
 
 Golf is a sport with diverse and detailed statistics, making it ideal grounds for prediction and analysis. The purpose of this project will be to use machine learning algorithms to predict whether a player will be successful or not. To do so, we will use data from the PGA 2017 Tour.
 
-In particular, our question will be specified as follows: What players will finish in the top 10 of an event at least once? (Is this accurate phrasing? Is this a good question? May reduce variability of our outcome variable by quite a bit in comparison to predicting number of top 10 finishes. Number of players who never managed to break into the top 10 are 34, while the number who did at some point is 161. This means that with a k-fold cross-validation approach where k=5, the probability of not having a False observation in one of the 5 folds is:[I forgot my probability stuff, but I think we might have a problem here.])
+Specifically, our goal is to predict whether an individual player has finished in the top 10 of a PGA Tour Event at least once during the season. So instead of asking for high placement in the season, we will be asking something to the tune of the following:
 
-To start, let's begin by reading in the data and install necessary packages.
+What explanatory variables can we use to predict someone's potential for doing well in a single event?
+
+For this project, we will be taking a look at data from the 2017 PGA Tour. To start, let's begin by reading in the data and install necessary packages.
 ```{r intro}
 #Package unloading
 library(pacman)
 
-p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,
+p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,glmnet,
        janitor,sandwich,xtable,parsnip, caret, randomForest, doParallel)
 
 
@@ -28,10 +30,10 @@ p_load(tidyverse,data.table,tidymodels,stargazer,ggpubr,
 pga_data17 <- fread("PGATOUR_data2.csv")
 ```
 
-Now, we will clean the data, subsetting to remove null and NA values.
+Now, we will clean the data. To start off, the data is only 195 observations, but the data includes several rows of empty observations at the end. We will use data.table to subset our data to only the legitimate observations we need. Then, we will check for other missing values, imputing as needed. Finally, we will check to ensure that all the variables are in the correct format.
 
 ```{r cleaning,results='asis'}
-#Subset data
+#Subset data to remove empty rows
 pga_data <- pga_data17[1:195,] %>% clean_names() %>%
   mutate(top_ten_finisher = as.factor(number_of_top_tens>0))
 
@@ -44,17 +46,22 @@ lapply(pga_data,FUN = function(x) {sum(is.na(x))}) %>%
 #There is one missing value in the "points behind lead" column, we will use the mean value to impute
 pga_data$points_behind_lead[33] <- mean(pga_data$points_behind_lead,na.rm = T)
 
-#Several variables seem to be character variables as well
+#Several numeric variables seem to be listed as character variables as well
 pga_data$fairways_hit <- gsub(",","",pga_data$fairways_hit) %>% 
   as.numeric()
 pga_data$total_drives <- gsub(",","",pga_data$total_drives) %>%
   as.numeric()
 ```
 
-Now, let's graph potential factors in top ten finishes and look for correlations.
+We subset the data to only legitimate observations (195 in total), imputed one missing value in the points_behind_lead column, and reformatted two columns to their appropriate class.
 
+Now, we have a concern. Since this is the PGA Tour, we can assume that the competition is meant to retain top players and loose worse ones. This means we may have representation issues, as only the better players are represented and worse ones aren't.
 
-```{r EDA}
+This issue on it's face doesn't seem like a big deal: we are trying to find the factors that make a player able to do well in a single event. However, we have to consider that perhaps worse players will have similar stats in some categories, with dissimilar ones in others. Our goal is to find disparities between good and poor players that define chances of success in a single event. As such, it is necessary we have proper representation of players that don't finish in the top 10 in at least one event, else we won't know the difference between good and bad players.
+
+To address this question, let's take a look at a simple linear regression comparing the rounds played by individual players and their status as top 10 finishers in at least one event:
+
+```{r model1}
 #Begin exploring the relationships in the data
 
 #Correlation b/w rounds played and top tens (Is this looking for issues in representation? Players with top tens more represented, so perhaps those without top tens are underrepresented?)
@@ -66,8 +73,13 @@ model1 <- lm(rounds_played~number_of_top_tens, pga_data)
 stargazer(model1)
 ```
 
+This regression appears to validate our concerns, with a significant coefficient for top_ten_finishers indicating that players who succeed to finish in the top 10 of one event do indeed play more rounds in the season by a significant amount.
 
-```{r plots}
+There's not much we can do on that front, we don't have access to additional data, and comparing this data to other golf events may introduce issues with respect to differences in event formats or difficulty.
+
+So instead, let's focus on metrics which involve average statistics over the entire season, to normalize for rounds played.
+
+```{r plots1}
 #Plot the rounds played relationship
 round_plot <-  ggplot(pga_data, aes(rounds_played, number_of_top_tens)) + 
   geom_point() +  geom_smooth(method = "lm") +
@@ -99,9 +111,12 @@ tee_plot <- ggplot(pga_data, aes(x=sg_ott,y = number_of_top_tens)) +
        y = "Number of Top Tens")
 
 #Arrange previous plots into a single graphic
-ggarrange(round_plot,putt_plot,drive_plot,fairway_plot,tee_plot)
+annotate_figure(ggarrange(round_plot,putt_plot,drive_plot,
+                          fairway_plot,tee_plot),
+                top = text_grob("Correlations with Number of Top Ten Finishes", size = 15))
 
 ```
+
 Not a significant amount of visual correlation between number of rounds played and number of top ten finishes.
 
 Strokes gained putting seems to have more of an effect on success.
@@ -112,6 +127,52 @@ There seems to be even less of a correlation in terms of fairway hit percentage 
 
 
 Let's examine these relationships as linear regressions, identifying the impact of each and the robustness of the coefficients.
+
+```{r plots2}
+#Plot the rounds played relationship
+round_plot <-  ggplot(pga_data, aes(rounds_played, as.integer(top_ten_finisher)-1)) + 
+  geom_point() +  geom_smooth(method = "glm", 
+    method.args = list(family = "binomial")) +
+  labs(x = "Rounds Played",
+       y = "Top 10 Finisher") +
+  scale_y_discrete()
+
+#Plotting strokes gained putting vs. top ten finishes
+putt_plot <- ggplot(pga_data, aes(sg_putting_per_round, 
+                                  as.integer(top_ten_finisher)-1)) +
+  geom_point() +  geom_smooth(method = "glm", 
+    method.args = list(family = "binomial")) +
+  labs(x = "Shots Gained Putting per Round",
+       y = "Top 10 Finisher")
+
+#Plotting average drive distance vs. top ten finishes
+drive_plot <- ggplot(pga_data, aes(avg_driving_distance,as.integer(top_ten_finisher)-1)) +
+  geom_point() + geom_smooth(method = "glm", 
+    method.args = list(family = "binomial")) +
+  labs(x = "Avg Driving Distance",
+       y = "Top 10 Finisher")
+
+#Plotting Fairway hit percentage vs top ten finishes
+fairway_plot <- ggplot(pga_data, aes(fairway_hit_percent,as.integer(top_ten_finisher)-1)) +
+  geom_point() + geom_smooth(method = "glm", 
+    method.args = list(family = "binomial")) +
+  labs(x = "Fairway Hit Percentage",
+       y = "Top 10 Finisher")
+
+#Plotting Shots gained off the tee vs top ten finishes
+tee_plot <- ggplot(pga_data, aes(sg_ott,as.integer(top_ten_finisher)-1)) + 
+  geom_point() + geom_smooth(method = "glm", 
+    method.args = list(family = "binomial")) +
+  labs(x = "Shots Gained: Off the Tee",
+       y = "Top 10 Finisher")
+
+#Arrange previous plots into a single graphic
+annotate_figure(ggarrange(round_plot,putt_plot,drive_plot,
+                          fairway_plot,tee_plot),
+                top = text_grob("Correlations with Top Ten Finishers", size = 15))
+```
+
+
 
 ```{r models}
 for (i in 1:5) {
